@@ -39,14 +39,16 @@ void setup() {
   // initialize the digital pin as an output.
   pinMode(shift_latch, OUTPUT);     
   pinMode(shift_clock, OUTPUT);     
-  pinMode(data, OUTPUT);     
+  pinMode(data, OUTPUT);   
+  CLKPR = 0x80;    // Tell the AtMega we want to change the system clock
+  CLKPR = 0x03;    // 1/8 prescaler = 2mhz for a 16MHz crystal  
 }
 
 //offset into the message, where screen draw should start
 unsigned int current_col = 0;  
 
 //How many times should we paint the matrix before scrolling it
-const int SCROLL_REFRESH = 50;
+const int SCROLL_REFRESH = 5;
 
 //keeps track of number of refreshes, counts up to SCROLL_REFRESH
 int scroll_count = 0;
@@ -72,6 +74,10 @@ void loop() {
 }
 
 void writeCol(unsigned int col, unsigned int data){
+  //The selected column must be driven low, and the
+  //lowest number column is actually the rightmost
+  //to simply things we reorder it by shifting left
+  //so column 0 is on the left.
   write_shift_reg( ~(0x80 >> col) );
   write_shift_reg( data );
   strobe_pin(shift_latch);
