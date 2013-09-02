@@ -27,39 +27,39 @@ THE SOFTWARE.
 
 #include "font5x7.h"
 
-int shift_latch = 7;
-int shift_clock = 6;
-int data = 5;
+#define shift_latch_bit_pos    7
+#define shift_clock_bit_pos    6
+#define shift_data_bit_pos     5
+
+#define shift_latch_mask       1 << shift_latch_bit_pos
+#define shift_clock_mask       1 << shift_clock_bit_pos
+#define shift_data_mask        1 << shift_data_bit_pos
 
 const char message[] = "  GR Makers  ";
 const int MESSAGE_COLS = CHAR_WIDTH * 12;
 
-// the setup routine runs once when you press reset:
 void setup() {                
-  // initialize the digital pin as an output.
-  pinMode(shift_latch, OUTPUT);     
-  pinMode(shift_clock, OUTPUT);     
-  pinMode(data, OUTPUT);   
-  CLKPR = 0x80;    // Tell the AtMega we want to change the system clock
-  CLKPR = 0x03;    // 1/8 prescaler = 2mhz for a 16MHz crystal  
+  pinMode(shift_latch_bit_pos, OUTPUT);     
+  pinMode(shift_clock_bit_pos, OUTPUT);     
+  pinMode(shift_data_bit_pos, OUTPUT);   
 }
 
-//offset into the message, where screen draw should start
+//number columns offset into the message, where screen draw should start
 unsigned int current_col = 0;  
 
 //How many times should we paint the matrix before scrolling it
-const int SCROLL_REFRESH = 5;
+const int SCROLL_REFRESH = 7;
 
 //keeps track of number of refreshes, counts up to SCROLL_REFRESH
 int scroll_count = 0;
 
+char letter = ' ';
+unsigned int offset = 0;
+unsigned int print_col;
+unsigned int i = 0;
+
 // the loop routine runs over and over again forever:
 void loop() {
-  char letter = ' ';
-  unsigned int offset = 0;
-  unsigned int print_col;
-  unsigned int i = 0;
-
   for (i=0; i < 8; ++i) {
     print_col = (current_col + i) % MESSAGE_COLS;
     letter = message[print_col / CHAR_WIDTH];
@@ -76,24 +76,29 @@ void loop() {
 void writeCol(unsigned int col, unsigned int data){
   //The selected column must be driven low, and the
   //lowest number column is actually the rightmost
-  //to simply things we reorder it by shifting left
+  //to simplify things we reorder it by shifting left
   //so column 0 is on the left.
   write_shift_reg( ~(0x80 >> col) );
   write_shift_reg( data );
-  strobe_pin(shift_latch);
+  strobe_latch();
 }
 
-void strobe_pin(unsigned int pin) {
-    digitalWrite(pin, HIGH);
-    digitalWrite(pin, LOW);
+void strobe_latch() {
+  PORTD |= shift_latch_mask;
+  PORTD &= ~shift_latch_mask;
 }
 
 void write_shift_reg(unsigned int write_me) {
   int i;
-  for (i =7; i >=0; --i) {
-    digitalWrite(shift_clock, LOW);
-    digitalWrite(data, (write_me >> i) & 0x01);
-    digitalWrite(shift_clock, HIGH);
+  int mask = 0x80;
+  for (i=0; i<8; ++i) {
+    PORTD &= ~shift_clock_mask;  //Set Clock Low
+    if ( write_me & mask ) 
+      PORTD |= shift_data_mask;
+    else   
+      PORTD &= ~shift_data_mask;
+    PORTD |= shift_clock_mask;  //Set Clock H
+    mask >>= 1;
   }
 }
     
