@@ -25,6 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#include "EEPROM.h"
 #include "font5x7.h"
 
 #define shift_latch_bit_pos    7
@@ -36,7 +37,7 @@ THE SOFTWARE.
 #define shift_data_mask        1 << shift_data_bit_pos
 
 const char message[] = "  GR Makers  ";
-const int MESSAGE_COLS = CHAR_WIDTH * 12;
+int MESSAGE_COLS = CHAR_WIDTH * 12;
 
 void setup() {                
   pinMode(shift_latch_bit_pos, OUTPUT);     
@@ -57,12 +58,13 @@ char letter = ' ';
 unsigned int offset = 0;
 unsigned int print_col;
 unsigned int i = 0;
+unsigned int romcur = 0;
 
 // the loop routine runs over and over again forever:
 void loop() {
   for (i=0; i < 8; ++i) {
     print_col = (current_col + i) % MESSAGE_COLS;
-    letter = message[print_col / CHAR_WIDTH];
+    letter = EEPROM.read(print_col / CHAR_WIDTH); // TODO: buffer this
     offset = print_col % CHAR_WIDTH;
     writeCol(i, font5x7[ (letter - FIRST_CHAR) * CHAR_WIDTH + offset]);
   }  
@@ -70,6 +72,28 @@ void loop() {
   if ( ++scroll_count > SCROLL_REFRESH ) {
      scroll_count = 0;
      current_col = (current_col + 1) % MESSAGE_COLS;
+  }
+}
+
+// Not compatible with Esplora, Leonardo, or Micro
+void serialEvent() 
+{
+  if (Serial.available() > 0) 
+  {
+    unsigned char newchar = Serial.read();
+    if (newchar == '\n' || newchar == '\0')
+    {
+      EEPROM.write(romcur++, '\0');
+      MESSAGE_COLRS = romcur * CHAR_WIDTH;
+    }
+    else if (newchar == '\r') // Windows only, immediately followed by an \n
+    {
+      // pass
+    }
+    else
+    {
+      EEPROM.write(romcur++, newchar);
+    }
   }
 }
 
