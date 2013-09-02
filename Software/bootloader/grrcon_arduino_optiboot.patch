@@ -1,0 +1,37 @@
+diff -ur /usr/share/arduino/hardware/arduino/bootloaders/optiboot/makeall optiboot/makeall
+--- /usr/share/arduino/hardware/arduino/bootloaders/optiboot/makeall	2013-02-02 09:34:37.000000000 -0500
++++ optiboot/makeall	2013-08-31 13:04:35.606245292 -0400
+@@ -18,3 +18,4 @@
+ make mega
+ make atmega88
+ make luminet
++make atmega328_grrcon
+diff -ur /usr/share/arduino/hardware/arduino/bootloaders/optiboot/Makefile optiboot/Makefile
+--- /usr/share/arduino/hardware/arduino/bootloaders/optiboot/Makefile	2013-02-02 09:34:37.000000000 -0500
++++ optiboot/Makefile	2013-08-31 13:04:11.010554502 -0400
+@@ -236,6 +236,25 @@
+ atmega328_isp: EFUSE = 05
+ atmega328_isp: isp
+ 
++atmega328_grrcon: TARGET = atmega328
++atmega328_grrcon: MCU_TARGET = atmega328p
++atmega328_grrcon: CFLAGS += '-DLED_START_FLASHES=3' '-DBAUD_RATE=19200'
++atmega328_grrcon: AVR_FREQ = 2000000L
++atmega328_grrcon: LDSECTIONS  = -Wl,--section-start=.text=0x7e00 -Wl,--section-start=.version=0x7ffe
++atmega328_grrcon: $(PROGRAM)_atmega328_grrcon.hex
++atmega328_grrcon: $(PROGRAM)_atmega328._grrcon.lst
++
++atmega328_grrcon_isp: atmega328
++atmega328_grrcon_isp: TARGET = atmega328
++atmega328_grrcon_isp: MCU_TARGET = atmega328p
++# 512 byte boot, SPIEN
++atmega328_grrcon_isp: HFUSE = D6
++# Low power xtal (16MHz/CKDIV8) 16KCK/14CK+65ms
++atmega328_grrcon_isp: LFUSE = 7F
++# 2.7V brownout
++atmega328_grrcon_isp: EFUSE = 06
++atmega328_grrcon_isp: isp
++
+ # Sanguino has a minimum boot size of 1024 bytes, so enable extra functions
+ #
+ sanguino: TARGET = atmega644p

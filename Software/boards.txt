@@ -1,0 +1,19 @@
+##############################################################
+# GrrCON 2013 Conference Badge.  16mhz/8 = 2mhz clock, 
+#    19200 bootloader
+
+grrcon2013.name=GrrCON 2013
+grrcon2013.upload.protocol=arduino
+grrcon2013.upload.maximum_size=32256
+grrcon2013.upload.speed=19200
+grrcon2013.bootloader.low_fuses=0x7F
+grrcon2013.bootloader.high_fuses=0xD6
+grrcon2013.bootloader.extended_fuses=0x06
+grrcon2013.bootloader.path=optiboot
+grrcon2013.bootloader.file=optiboot_atmega328_grrcon.hex
+grrcon2013.bootloader.unlock_bits=0x3F
+grrcon2013.bootloader.lock_bits=0x0F
+grrcon2013.build.mcu=atmega328p
+grrcon2013.build.f_cpu=2000000L
+grrcon2013.build.core=arduino
+grrcon2013.build.variant=standard

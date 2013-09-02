@@ -35,7 +35,7 @@ THE SOFTWARE.
 #define shift_clock_mask       1 << shift_clock_bit_pos
 #define shift_data_mask        1 << shift_data_bit_pos
 
-const char message[] = "  GR Makers  ";
+const char message[] = "  GR Maker2  ";
 const int MESSAGE_COLS = CHAR_WIDTH * 12;
 
 void setup() {                
@@ -48,7 +48,7 @@ void setup() {
 unsigned int current_col = 0;  
 
 //How many times should we paint the matrix before scrolling it
-const int SCROLL_REFRESH = 7;
+const int SCROLL_REFRESH = 20;
 
 //keeps track of number of refreshes, counts up to SCROLL_REFRESH
 int scroll_count = 0;
