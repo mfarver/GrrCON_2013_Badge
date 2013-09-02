@@ -35,8 +35,8 @@ THE SOFTWARE.
 #define shift_clock_mask       1 << shift_clock_bit_pos
 #define shift_data_mask        1 << shift_data_bit_pos
 
-const char message[] = "  GR Maker2  ";
-const int MESSAGE_COLS = CHAR_WIDTH * 12;
+const char message[] = "  GR Makers  ";
+int MESSAGE_COLS = CHAR_WIDTH * 12;
 
 void setup() {                
   pinMode(shift_latch_bit_pos, OUTPUT);     
@@ -48,7 +48,7 @@ void setup() {
 unsigned int current_col = 0;  
 
 //How many times should we paint the matrix before scrolling it
-const int SCROLL_REFRESH = 20;
+const int SCROLL_REFRESH = 7;
 
 //keeps track of number of refreshes, counts up to SCROLL_REFRESH
 int scroll_count = 0;
@@ -62,7 +62,7 @@ unsigned int i = 0;
 void loop() {
   for (i=0; i < 8; ++i) {
     print_col = (current_col + i) % MESSAGE_COLS;
-    letter = message[print_col / CHAR_WIDTH];
+    letter = EEPROM.read(print_col / CHAR_WIDTH); // TODO: buffer this
     offset = print_col % CHAR_WIDTH;
     writeCol(i, font5x7[ (letter - FIRST_CHAR) * CHAR_WIDTH + offset]);
   }  
@@ -70,6 +70,28 @@ void loop() {
   if ( ++scroll_count > SCROLL_REFRESH ) {
      scroll_count = 0;
      current_col = (current_col + 1) % MESSAGE_COLS;
+  }
+}
+
+// Not compatible with Esplora, Leonardo, or Micro
+void serialEvent() 
+{
+  if (Serial.available() > 0) 
+  {
+    unsigned char newchar = Serial.read();
+    if (newchar == '\n' || newchar == '\0')
+    {
+      EEPROM.write(romcur++, '\0');
+      MESSAGE_COLRS = romcur * CHAR_WIDTH;
+    }
+    else if (newchar == '\r') // Windows only, immediately followed by an \n
+    {
+      // pass
+    }
+    else
+    {
+      EEPROM.write(romcur++, newchar);
+    }
   }
 }
 
