@@ -25,6 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#include "EEPROM.h"
 #include "font5x7.h"
 
 #define shift_latch_bit_pos    7
@@ -35,20 +36,16 @@ THE SOFTWARE.
 #define shift_clock_mask       1 << shift_clock_bit_pos
 #define shift_data_mask        1 << shift_data_bit_pos
 
-const char message[] = "  GR Makers  ";
-int MESSAGE_COLS = CHAR_WIDTH * 12;
+#define MSG_LENGTH_ADDR 0
+#define START_OF_MSG_ADDR MSG_LENGTH_ADDR + 1
 
-void setup() {                
-  pinMode(shift_latch_bit_pos, OUTPUT);     
-  pinMode(shift_clock_bit_pos, OUTPUT);     
-  pinMode(shift_data_bit_pos, OUTPUT);   
-}
+int message_num_cols = 0;
 
 //number columns offset into the message, where screen draw should start
 unsigned int current_col = 0;  
 
 //How many times should we paint the matrix before scrolling it
-const int SCROLL_REFRESH = 7;
+const int SCROLL_REFRESH = 20;
 
 //keeps track of number of refreshes, counts up to SCROLL_REFRESH
 int scroll_count = 0;
@@ -57,19 +54,32 @@ char letter = ' ';
 unsigned int offset = 0;
 unsigned int print_col;
 unsigned int i = 0;
+unsigned int romcur = START_OF_MSG_ADDR;
+
+
+void setup() {                
+  pinMode(shift_latch_bit_pos, OUTPUT);     
+  pinMode(shift_clock_bit_pos, OUTPUT);     
+  pinMode(shift_data_bit_pos, OUTPUT);  
+  Serial.begin(9600);
+  
+  //We need to load the message length
+  //The message is stored in a Pascal string in EEPROM
+  message_num_cols = EEPROM.read(MSG_LENGTH_ADDR) * CHAR_WIDTH;
+}
 
 // the loop routine runs over and over again forever:
 void loop() {
   for (i=0; i < 8; ++i) {
-    print_col = (current_col + i) % MESSAGE_COLS;
-    letter = EEPROM.read(print_col / CHAR_WIDTH); // TODO: buffer this
+    print_col = (current_col + i) % message_num_cols;
+    letter = EEPROM.read(print_col / CHAR_WIDTH + START_OF_MSG_ADDR); // TODO: buffer this
     offset = print_col % CHAR_WIDTH;
     writeCol(i, font5x7[ (letter - FIRST_CHAR) * CHAR_WIDTH + offset]);
   }  
 
   if ( ++scroll_count > SCROLL_REFRESH ) {
      scroll_count = 0;
-     current_col = (current_col + 1) % MESSAGE_COLS;
+     current_col = (current_col + 1) % message_num_cols;
   }
 }
 
@@ -79,10 +89,13 @@ void serialEvent()
   if (Serial.available() > 0) 
   {
     unsigned char newchar = Serial.read();
+    Serial.write(newchar);
     if (newchar == '\n' || newchar == '\0')
     {
-      EEPROM.write(romcur++, '\0');
-      MESSAGE_COLRS = romcur * CHAR_WIDTH;
+      int msg_len = romcur - START_OF_MSG_ADDR - 1 -1;
+      message_num_cols = msg_len * CHAR_WIDTH;
+      EEPROM.write(MSG_LENGTH_ADDR, msg_len);
+      romcur = START_OF_MSG_ADDR;
     }
     else if (newchar == '\r') // Windows only, immediately followed by an \n
     {
