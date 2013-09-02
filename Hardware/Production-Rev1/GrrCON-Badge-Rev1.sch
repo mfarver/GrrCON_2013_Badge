@@ -14291,7 +14291,7 @@ Source: www.kingbright.com</description>
 <text x="284.48" y="154.94" size="3.81" layer="97">Battery</text>
 <text x="68.58" y="251.46" size="12.7" layer="97">GrrCON 2013 Badge</text>
 <text x="2.54" y="-10.16" size="3.81" layer="97"></text>
-<text x="2.54" y="-17.78" size="3.81" layer="97">Based on the Ardunio Uno Rev 3, licensed under the Creative Commons Attribution Share-Alike license.  http://arduino.cc
+<text x="2.54" y="-17.78" size="3.81" layer="97">Based on the Arduino Uno Rev 3, licensed under the Creative Commons Attribution Share-Alike license.  http://arduino.cc
 Designed for GrrCON by GR Makers.  http://grmakers.com/
 Board layout by Mark Farver, Twisted Blades LLC http://www.twistedblades.net/</text>
 </plain>
