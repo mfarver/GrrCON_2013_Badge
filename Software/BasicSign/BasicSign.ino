@@ -38,6 +38,7 @@ THE SOFTWARE.
 
 #define MSG_LENGTH_ADDR 0
 #define START_OF_MSG_ADDR MSG_LENGTH_ADDR + 1
+#define MAX_MSG_LENGTH 255
 
 int message_num_cols = 0;
 
@@ -54,7 +55,9 @@ char letter = ' ';
 unsigned int offset = 0;
 unsigned int print_col;
 unsigned int i = 0;
-unsigned int romcur = START_OF_MSG_ADDR;
+unsigned int write_buffer_index = 0;
+char writebuffer[MAX_MSG_LENGTH];
+unsigned int eol_counter = 0;
 
 
 void setup() {                
@@ -92,10 +95,17 @@ void serialEvent()
     Serial.write(newchar);
     if (newchar == '\n' || newchar == '\0')
     {
-      int msg_len = romcur - START_OF_MSG_ADDR - 1 -1;
-      message_num_cols = msg_len * CHAR_WIDTH;
-      EEPROM.write(MSG_LENGTH_ADDR, msg_len);
-      romcur = START_OF_MSG_ADDR;
+      int i = 0;
+      
+      if ( ++eol_counter >= 3) {
+        for ( i = 0; i < write_buffer_index; ++i) {
+          EEPROM.write(START_OF_MSG_ADDR + i, writebuffer[i]); 
+        }
+        EEPROM.write(MSG_LENGTH_ADDR, write_buffer_index);
+        message_num_cols = write_buffer_index * CHAR_WIDTH;
+        write_buffer_index = 0;
+        eol_counter = 0;
+      }
     }
     else if (newchar == '\r') // Windows only, immediately followed by an \n
     {
@@ -103,7 +113,8 @@ void serialEvent()
     }
     else
     {
-      EEPROM.write(romcur++, newchar);
+      writebuffer[write_buffer_index++] = newchar;
+      eol_counter = 0;
     }
   }
 }
