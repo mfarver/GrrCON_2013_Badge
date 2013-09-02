@@ -1,0 +1,21 @@
+#!/usr/bin/python
+
+import serial, sys, glob
+
+if len(sys.argv) >= 2:
+    ser = serial.Serial(sys.argv[1])
+else:
+    for port in glob.glob('/dev/ttyACM*'):
+        try:
+            ser = serial.Serial(port)
+        except Exception:
+            pass # Fail
+        else:
+            break
+    else:
+        sys.exit("No ports found")
+
+
+
+txt = raw_input("> ")
+ser.write(txt+'\n\n\n')
