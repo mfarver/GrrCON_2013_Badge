@@ -105,11 +105,16 @@ void serialEvent()
         message_num_cols = write_buffer_index * CHAR_WIDTH;
         write_buffer_index = 0;
         eol_counter = 0;
+        current_col = 0;
       }
     }
     else if (newchar == '\r') // Windows only, immediately followed by an \n
     {
       // pass
+    }
+    else if (newchar == 0x01)
+    {
+      Serial.println(EEPROM.read(MSG_LENGTH_ADDR), DEC);
     }
     else
     {
