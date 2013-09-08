@@ -90,8 +90,11 @@ void clear_writebuf() {
 void setup() {                
   pinMode(shift_latch_bit_pos, OUTPUT);     
   pinMode(shift_clock_bit_pos, OUTPUT);     
-  pinMode(shift_data_bit_pos, OUTPUT);  
+  pinMode(shift_data_bit_pos, OUTPUT);
+  
+#ifdef USE_SERIAL
   Serial.begin(9600);
+#endif
   
   load_msg();
   clear_writebuf();
@@ -129,6 +132,7 @@ void loop() {
   }
 }
 
+#ifdef USE_SERIAL
 // Not compatible with Esplora, Leonardo, or Micro
 void serialEvent() 
 {
@@ -170,6 +174,7 @@ void serialEvent()
     }
   }
 }
+#endif
 
 void writeCol(unsigned int col, unsigned int data){
   //The selected column must be driven low, and the
