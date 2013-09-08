@@ -40,25 +40,22 @@ THE SOFTWARE.
 #define START_OF_MSG_ADDR MSG_LENGTH_ADDR + 1
 #define MAX_MSG_LENGTH 254
 
-int message_num_cols = 0;
+boolean reload;
+int message_num_cols;
 char message[MAX_MSG_LENGTH];
 
 //number columns offset into the message, where screen draw should start
-unsigned int current_col = 0;  
+unsigned int current_col;
 
 //How many times should we paint the matrix before scrolling it
 const int SCROLL_REFRESH = 20;
 
 //keeps track of number of refreshes, counts up to SCROLL_REFRESH
-int scroll_count = 0;
+int scroll_count;
 
-char letter = ' ';
-unsigned int offset = 0;
-unsigned int print_col;
-unsigned int i = 0;
 unsigned int write_buffer_index = 0;
-char writebuffer[MAX_MSG_LENGTH];
 unsigned int eol_counter = 0;
+char writebuffer[MAX_MSG_LENGTH];
 
 void load_msg() {
   //We need to load the message length
@@ -71,11 +68,19 @@ void load_msg() {
   }
 
   // copy the message from EEPROM (which is slow)
-  for(i = 0; i < message_num_cols; ++i) {
+  for(unsigned int i = 0; i < message_num_cols; ++i) {
     message[i] = EEPROM.read(START_OF_MSG_ADDR + i);
   }
 
   message_num_cols *= CHAR_WIDTH;
+  current_col = 0;
+  scroll_count = 0;
+  reload = false;
+}
+
+void clear_writebuf() {
+  write_buffer_index = 0;
+  eol_counter = 0;
 }
 
 void setup() {                
@@ -85,23 +90,29 @@ void setup() {
   Serial.begin(9600);
   
   load_msg();
+  clear_writebuf();
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
+  // reload message, if signalled to do so
+  if(reload) {
+    load_msg();
+  }
+  
   // no message defined: demo routine
   if(message_num_cols == 0) {
     // TODO: demo routine
     return;
   }
 
-  for (i=0; i < 8; ++i) {
-    print_col = (current_col + i) % message_num_cols;
-    letter = message[print_col / CHAR_WIDTH];
+  for (int i=0; i < 8; ++i) {
+    unsigned int print_col = (current_col + i) % message_num_cols;
+    char letter = message[print_col / CHAR_WIDTH];
     if((letter < FIRST_CHAR) || (letter > LAST_CHAR)) {
       letter = FIRST_CHAR;
     }
-    offset = print_col % CHAR_WIDTH;
+    unsigned int offset = print_col % CHAR_WIDTH;
     writeCol(i, font5x7[ (letter - FIRST_CHAR) * CHAR_WIDTH + offset]);
   }  
 
@@ -125,10 +136,10 @@ void serialEvent()
           EEPROM.write(START_OF_MSG_ADDR + i, writebuffer[i]); 
         }
         EEPROM.write(MSG_LENGTH_ADDR, write_buffer_index);
-        write_buffer_index = 0;
-        eol_counter = 0;
-        load_msg();
-        current_col = 0;
+
+		clear_writebuf();
+        // signal a message load on next loop
+		reload = true;
       }
     }
     else if (newchar == '\r') // Windows only, immediately followed by an \n
