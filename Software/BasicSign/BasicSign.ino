@@ -120,10 +120,8 @@ void serialEvent()
     Serial.write(newchar);
     if (newchar == '\n' || newchar == '\0')
     {
-      int i = 0;
-      
       if ( ++eol_counter >= 3) {
-        for ( i = 0; i < write_buffer_index; ++i) {
+        for (int i = 0; i < write_buffer_index; ++i) {
           EEPROM.write(START_OF_MSG_ADDR + i, writebuffer[i]); 
         }
         EEPROM.write(MSG_LENGTH_ADDR, write_buffer_index);
