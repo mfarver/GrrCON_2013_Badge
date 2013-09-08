@@ -44,6 +44,9 @@ boolean reload;
 int message_num_cols;
 char message[MAX_MSG_LENGTH];
 
+// keeps track of which demo function is being run currently
+unsigned char current_demo;
+
 //number columns offset into the message, where screen draw should start
 unsigned int current_col;
 
@@ -75,6 +78,7 @@ void load_msg() {
   message_num_cols *= CHAR_WIDTH;
   current_col = 0;
   scroll_count = 0;
+  current_demo = 0;
   reload = false;
 }
 
@@ -93,6 +97,9 @@ void setup() {
   clear_writebuf();
 }
 
+// forward-declare demo routine
+void demo();
+
 // the loop routine runs over and over again forever:
 void loop() {
   // reload message, if signalled to do so
@@ -102,7 +109,7 @@ void loop() {
   
   // no message defined: demo routine
   if(message_num_cols == 0) {
-    // TODO: demo routine
+    demo();
     return;
   }
 
@@ -186,4 +193,41 @@ void write_shift_reg(unsigned int write_me) {
     PORTD |= shift_clock_mask;  //Set Clock H
     mask >>= 1;
   }
+}
+
+void demo() {
+  const unsigned char MAX_DEMO = 1;
+  if(current_demo == 0) {
+    // all LEDs on
+	for(char i = 0; i < 8; ++i) {
+	  writeCol(i, 0x7F);
+	}
+	if(+scroll_count > SCROLL_REFRESH) {
+	  scroll_count = 0;
+	  ++current_demo;
+	  current_col = 0;
+	}
+  } else if(current_demo == 1) {
+    // one LED on, dropping down each column from left to right
+	unsigned int col = current_col / 7;
+	unsigned int row_mask = 1 << (current_col % 7);
+	for(char i = 0; i < 8; ++i) {
+	  if(i != col) {
+	    writeCol(i, 0);
+	  } else {
+	    writeCol(i, row_mask);
+	  }
+	}
+	if(++scroll_count > SCROLL_REFRESH) {
+	  scroll_count = 0;
+	  ++current_col;
+	}
+	if(current_col > 56) {
+	  current_col = 0;
+	  ++current_demo;
+	}
+  }
+
+  // and loop around
+  current_demo %= MAX_DEMO;
 }
