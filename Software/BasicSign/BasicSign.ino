@@ -201,7 +201,7 @@ void write_shift_reg(unsigned int write_me) {
 }
 
 void demo() {
-  const unsigned char MAX_DEMO = 1;
+  const unsigned char DEMO_COUNT = 2;
   if(current_demo == 0) {
     // all LEDs on
 	for(char i = 0; i < 8; ++i) {
@@ -234,5 +234,5 @@ void demo() {
   }
 
   // and loop around
-  current_demo %= MAX_DEMO;
+  current_demo %= DEMO_COUNT;
 }
