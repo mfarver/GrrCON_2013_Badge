@@ -153,10 +153,15 @@ void serialEvent()
     {
       // pass
     }
-    else if (newchar == 0x01)
+    else if (newchar == 0x01) // ctrl-a
     {
       Serial.println(EEPROM.read(MSG_LENGTH_ADDR), DEC);
     }
+	else if (newchar == 0x03) // ctrl-c
+	{
+	  // abort the current string
+	  clear_writebuf();
+	}
     else
     {
       write_buffer_index = (write_buffer_index++) % MAX_MSG_LENGTH;
