@@ -202,12 +202,13 @@ void write_shift_reg(unsigned int write_me) {
 
 void demo() {
   const unsigned char DEMO_COUNT = 2;
+
   if(current_demo == 0) {
     // all LEDs on
 	for(char i = 0; i < 8; ++i) {
 	  writeCol(i, 0x7F);
 	}
-	if(+scroll_count > SCROLL_REFRESH) {
+	if(++scroll_count > SCROLL_REFRESH) {
 	  scroll_count = 0;
 	  ++current_demo;
 	  current_col = 0;
