@@ -38,9 +38,10 @@ THE SOFTWARE.
 
 #define MSG_LENGTH_ADDR 0
 #define START_OF_MSG_ADDR MSG_LENGTH_ADDR + 1
-#define MAX_MSG_LENGTH 255
+#define MAX_MSG_LENGTH 254
 
 int message_num_cols = 0;
+char message[MAX_MSG_LENGTH];
 
 //number columns offset into the message, where screen draw should start
 unsigned int current_col = 0;  
@@ -59,6 +60,23 @@ unsigned int write_buffer_index = 0;
 char writebuffer[MAX_MSG_LENGTH];
 unsigned int eol_counter = 0;
 
+void load_msg() {
+  //We need to load the message length
+  //The message is stored in a Pascal string in EEPROM
+  message_num_cols = EEPROM.read(MSG_LENGTH_ADDR);
+  
+  // if the EEPROM has not been initialized, we have no message
+  if(message_num_cols == 0xFF) {
+    message_num_cols = 0;
+  }
+
+  // copy the message from EEPROM (which is slow)
+  for(i = 0; i < message_num_cols; ++i) {
+    message[i] = EEPROM.read(START_OF_MSG_ADDR + i);
+  }
+
+  message_num_cols *= CHAR_WIDTH;
+}
 
 void setup() {                
   pinMode(shift_latch_bit_pos, OUTPUT);     
@@ -66,16 +84,23 @@ void setup() {
   pinMode(shift_data_bit_pos, OUTPUT);  
   Serial.begin(9600);
   
-  //We need to load the message length
-  //The message is stored in a Pascal string in EEPROM
-  message_num_cols = EEPROM.read(MSG_LENGTH_ADDR) * CHAR_WIDTH;
+  load_msg();
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
+  // no message defined: demo routine
+  if(message_num_cols == 0) {
+    // TODO: demo routine
+    return;
+  }
+
   for (i=0; i < 8; ++i) {
     print_col = (current_col + i) % message_num_cols;
-    letter = EEPROM.read(print_col / CHAR_WIDTH + START_OF_MSG_ADDR); // TODO: buffer this
+    letter = message[print_col / CHAR_WIDTH];
+    if((letter < FIRST_CHAR) || (letter > LAST_CHAR)) {
+      letter = FIRST_CHAR;
+    }
     offset = print_col % CHAR_WIDTH;
     writeCol(i, font5x7[ (letter - FIRST_CHAR) * CHAR_WIDTH + offset]);
   }  
@@ -102,9 +127,9 @@ void serialEvent()
           EEPROM.write(START_OF_MSG_ADDR + i, writebuffer[i]); 
         }
         EEPROM.write(MSG_LENGTH_ADDR, write_buffer_index);
-        message_num_cols = write_buffer_index * CHAR_WIDTH;
         write_buffer_index = 0;
         eol_counter = 0;
+        load_msg();
         current_col = 0;
       }
     }
@@ -118,7 +143,8 @@ void serialEvent()
     }
     else
     {
-      writebuffer[write_buffer_index++] = newchar;
+      write_buffer_index = (write_buffer_index++) % MAX_MSG_LENGTH;
+      writebuffer[write_buffer_index] = newchar;
       eol_counter = 0;
     }
   }
@@ -152,5 +178,3 @@ void write_shift_reg(unsigned int write_me) {
     mask >>= 1;
   }
 }
-    
-  
