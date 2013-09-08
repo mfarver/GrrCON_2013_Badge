@@ -201,19 +201,34 @@ void write_shift_reg(unsigned int write_me) {
 }
 
 void demo() {
-  const unsigned char DEMO_COUNT = 2;
+  const unsigned char DEMO_COUNT = 3;
 
   if(current_demo == 0) {
     // all LEDs on
 	for(char i = 0; i < 8; ++i) {
 	  writeCol(i, 0x7F);
 	}
-	if(++scroll_count > SCROLL_REFRESH) {
+	if(++scroll_count > (SCROLL_REFRESH * 50)) {
 	  scroll_count = 0;
 	  ++current_demo;
 	  current_col = 0;
 	}
   } else if(current_demo == 1) {
+    // first odd lines, then even lines
+    char mask = (0x55 << (current_col % 2)) & 0x7F;
+    for(char i = 0; i < 8; ++i) {
+      writeCol(i, mask);
+    }
+    if(++scroll_count > (SCROLL_REFRESH * 20)) {
+      scroll_count = 0;
+      ++current_col;
+    }
+    if(current_col > 9) {
+      scroll_count = 0;
+      ++current_demo;
+      current_col = 0;
+    }
+  } else if(current_demo == 2) {
     // one LED on, dropping down each column from left to right
 	unsigned int col = current_col / 7;
 	unsigned int row_mask = 1 << (current_col % 7);
@@ -224,11 +239,11 @@ void demo() {
 	    writeCol(i, row_mask);
 	  }
 	}
-	if(++scroll_count > SCROLL_REFRESH) {
+	if(++scroll_count > (SCROLL_REFRESH * 10)) {
 	  scroll_count = 0;
 	  ++current_col;
 	}
-	if(current_col > 56) {
+	if(current_col >= 56) {
 	  current_col = 0;
 	  ++current_demo;
 	}
