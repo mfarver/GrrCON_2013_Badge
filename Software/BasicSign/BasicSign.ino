@@ -51,7 +51,7 @@ unsigned char current_demo;
 unsigned int current_col;
 
 //How many times should we paint the matrix before scrolling it
-const int SCROLL_REFRESH = 20;
+const int SCROLL_REFRESH = 10;
 
 //keeps track of number of refreshes, counts up to SCROLL_REFRESH
 int scroll_count;
