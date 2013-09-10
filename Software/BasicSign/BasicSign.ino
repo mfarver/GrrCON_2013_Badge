@@ -40,6 +40,8 @@ THE SOFTWARE.
 #define START_OF_MSG_ADDR MSG_LENGTH_ADDR + 1
 #define MAX_MSG_LENGTH 254
 
+#define USE_SERIAL
+
 boolean reload;
 int message_num_cols;
 char message[MAX_MSG_LENGTH];
