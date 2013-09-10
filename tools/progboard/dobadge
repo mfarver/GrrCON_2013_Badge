@@ -1,0 +1,150 @@
+#!/bin/bash
+
+PROGRAMMER=avrispmkii
+export PROGRAMMER
+
+again=1
+while [ $again -eq 1 ]; do
+
+BADGE=`echo $BADGE|grep -E '^[0-4]$'`
+while [ -z "$BADGE" ]; do
+
+echo Please select a badge type to program:
+echo 0 - speaker
+echo 1 - staff
+echo 2 - GrrCON
+echo 3 - VIP
+echo "n - none (raw badge)"
+
+echo
+echo -n "badge type? "
+
+read -n 1 BADGE
+echo
+done
+
+echo -n programming badge type:
+case "$BADGE" in
+ 0) 
+   echo Speaker
+   BADGEFILE=speaker
+   ;;
+ 1)
+   echo Staff
+   BADGEFILE=staff
+   ;;
+ 2)
+   echo GrrCON
+   BADGEFILE=grrcon
+   ;;
+ 3)
+   echo VIP
+   BADGEFILE=vip
+   ;;
+ n|N)
+   echo raw
+   BADGEFILE=
+   ;;
+esac
+
+USBOK=0
+while [ $USBOK -ne 1 ]; do
+echo please connect your programmer to the 16u2 port
+echo -n and press enter
+
+read dummy
+
+./write_usb
+rv=$?
+
+if [ $rv -ne 0 ]; then
+  echo There was an error programming the 16u2
+  dummy=g
+  while [ -n "$dummy" -a "$dummy" != "y" -a "$dummy" != "Y" ]; do
+  echo "try again? "
+  read -n 1 dummy
+  echo
+  if [ "$dummy" = "n" -o "$dummy" = "N" ]; then
+   exit
+  fi
+  done
+else
+  USBOK=1
+fi
+done
+
+AVROK=0
+while [ $AVROK -ne 1 ]; do
+echo please connect your programmer to the avr port
+echo -n and press enter
+
+read dummy
+
+./write_boot
+rv=$?
+
+if [ $rv -ne 0 ]; then
+  dummy=g
+  echo There was an error programming the bootloader onto the AVR
+  while [ -n "$dummy" -a "$dummy" != "y" -a "$dummy" != "Y" ]; do
+    echo -n "try again?"
+    read -n 1 dummy
+    echo
+    echo
+    if [ "$dummy" = "n" -o "$dummy" = "N" ]; then
+      exit
+    fi
+  done
+else
+  AVROK=1
+fi
+done
+
+AVROK=0
+while [ $AVROK -ne 1 ]; do
+./write_sign $BADGEFILE
+rv=$?
+
+if [ $rv -ne 0 ]; then
+  echo There was an error programming the sign code onto the AVR
+  dummy=g
+  while [ -n "$dummy" -a "$dummy" != "y" -a "$dummy" != "Y" ]; do
+    echo -n "try again? "
+    read -n 1 dummy
+    echo
+    echo
+    if [ "$dummy" = "n" -o "$dummy" = "N" ]; then
+      exit
+    fi
+  done
+else
+  AVROK=1
+fi
+done
+
+echo "programming complete!"
+
+echo
+
+dummy=g
+while [ -n "$dummy" -a "$dummy" != "y" -a "$dummy" != "Y" ]; do
+  echo -n "program another of this badge type? "
+  read -n 1 dummy
+  echo
+  if [ "$dummy" = "n" -o "$dummy" = "N" ]; then
+    dummy=g
+    echo
+    while [ -n "$dummy" -a "$dummy" != "y" -a "$dummy" != "Y" ]; do
+    echo -n "program a different badge type? "
+    read -n 1 dummy
+    echo
+    if [ "$dummy" = "n" -o "$dummy" = "N" ]; then
+      exit
+    fi
+    done
+    BADGE=newbadge
+  fi
+done
+
+done
+

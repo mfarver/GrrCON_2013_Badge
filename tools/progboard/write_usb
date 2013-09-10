@@ -1,0 +1,9 @@
+#!/bin/bash --
+
+if [ -z "$PROGRAMMER" ]; then
+  PROGRAMMER=avrispmkii
+fi
+
+avrdude -p atmega16u2 -c $PROGRAMMER -P usb -e -U flash:w:Arduino-COMBINED-dfu-usbserial-atmega16u2-Uno-Rev3.hex -U lfuse:w:0xFF:m -U hfuse:w:0xD9:m -U efuse:w:0xF4:m -U lock:w:0x0f:m
+
+exit $?

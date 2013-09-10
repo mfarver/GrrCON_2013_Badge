@@ -1,0 +1,10 @@
+#!/bin/bash --
+
+if [ -z "$PROGRAMMER" ]; then
+  PROGRAMMER=avrispmkii
+fi
+
+avrdude -p atmega328p -c $PROGRAMMER -P usb -e -U lfuse:w:0x7F:m -U hfuse:w:0xd6:m -U efuse:w:0x06:m -U flash:w:optiboot_atmega328_grrcon.hex -U lock:w:0x0f:m
+
+exit $?
+

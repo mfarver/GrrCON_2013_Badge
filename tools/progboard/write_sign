@@ -1,0 +1,15 @@
+#!/bin/bash --
+
+BADGE=
+if [ $# -eq 1 ]; then
+  BADGE="-U eeprom:w:${1}.hex:i"
+fi
+
+if [ -z "$PROGRAMMER" ] ; then
+  PROGRAMMER=avrispmkii
+fi
+
+avrdude -p atmega328p -c $PROGRAMMER -D -P usb -U flash:w:BasicSign.cpp.hex -U eeprom:w:0xff:m $BADGE
+
+exit $?
+
