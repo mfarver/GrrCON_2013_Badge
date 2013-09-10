@@ -26,3 +26,5 @@ txt = raw_input("> ")
 # sleep to make sure the AVR is booted. opening the port reboots.
 time.sleep(2);
 ser.write('aaaaaaaaaa\x01\x01\x01'+txt+txt+txt)
+time.sleep(1);
+print "done"
