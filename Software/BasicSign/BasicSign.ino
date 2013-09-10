@@ -40,12 +40,21 @@ THE SOFTWARE.
 #define MSG_LENGTH_ADDR 0
 #define START_OF_MSG_CRC MSG_LENGTH_ADDR + 1
 #define START_OF_MSG_ADDR START_OF_MSG_CRC + 4
-#define MAX_MSG_LENGTH 254
+#define MAX_MSG_LENGTH 255
 
 // last byte of eeprom contains the badge type
 #define BADGE_TYPE_ADDR 1023
 
 #define USE_SERIAL
+
+#ifdef USE_SERIAL
+unsigned char serial_state;
+unsigned long serial_crc;
+unsigned long serial_crc2;
+unsigned char serial_len;
+unsigned char serial_pos;
+char serial_message[MAX_MSG_LENGTH+1];
+#endif
 
 // how many demo modes do we have?
 #define DEMO_COUNT 3
@@ -60,16 +69,13 @@ char message[MAX_MSG_LENGTH];
 
 // keeps track of which demo function is being run currently
 unsigned char current_demo;
+unsigned char demo_speed;
 
 //number columns offset into the message, where screen draw should start
 unsigned int current_col;
 
 //keeps track of number of refreshes, counts up to SCROLL_REFRESH
 int scroll_count;
-
-unsigned int write_buffer_index = 0;
-unsigned int eol_counter = 0;
-char writebuffer[MAX_MSG_LENGTH];
 
 unsigned char badge_type;
 
@@ -166,11 +172,6 @@ void load_msg() {
   reload = false;
 }
 
-void clear_writebuf() {
-  write_buffer_index = 0;
-  eol_counter = 0;
-}
-
 void setup() {                
   pinMode(shift_latch_bit_pos, OUTPUT);     
   pinMode(shift_clock_bit_pos, OUTPUT);     
@@ -178,11 +179,12 @@ void setup() {
   
 #ifdef USE_SERIAL
   Serial.begin(9600);
+  
+  serial_state = 0;
 #endif
 
   current_demo = 0;  
   load_msg();
-  clear_writebuf();
 }
 
 // forward-declare demo routine
@@ -221,41 +223,113 @@ void loop() {
 // Not compatible with Esplora, Leonardo, or Micro
 void serialEvent() 
 {
+  // extremely paranoid protocol:
+  // first, look for three 0x03 (ctrl-c)
+  // then get the length and crc.
+  // then the crc with each byte xored by the length
+  // then length bytes of message data.
+  
+  // to change badge type:
+  // three 0x99 followed by the badge type number three times
+  
   if (Serial.available() > 0) 
   {
     unsigned char newchar = Serial.read();
     Serial.write(newchar);
-    if (newchar == '\n' || newchar == '\0')
-    {
-      if ( ++eol_counter >= 3) {
-        for (int i = 0; i < write_buffer_index; ++i) {
-          EEPROM.write(START_OF_MSG_ADDR + i, writebuffer[i]); 
-        }
-        EEPROM.write(MSG_LENGTH_ADDR, write_buffer_index);
 
-		clear_writebuf();
-        // signal a message load on next loop
-		reload = true;
+    if(0 == serial_state) {
+      if(0x03 == newchar) {
+        serial_len = 1;
+        ++serial_state;
+      } else if(0x99 == newchar) {
+        serial_state = 100;
+        serial_len = 1;
       }
-    }
-    else if (newchar == '\r') // Windows only, immediately followed by an \n
-    {
-      // pass
-    }
-    else if (newchar == 0x01) // ctrl-a
-    {
-      Serial.println(EEPROM.read(MSG_LENGTH_ADDR), DEC);
-    }
-	else if (newchar == 0x03) // ctrl-c
-	{
-	  // abort the current string
-	  clear_writebuf();
-	}
-    else
-    {
-      write_buffer_index = (write_buffer_index++) % MAX_MSG_LENGTH;
-      writebuffer[write_buffer_index] = newchar;
-      eol_counter = 0;
+    } else if(1 == serial_state) {
+      if(0x03 == newchar) {
+        if(++serial_len == 3) {
+          ++serial_state;
+        }
+      } else {
+        serial_state = 0;
+      }
+    } else if(2 == serial_state) {
+      serial_len = newchar;
+      ++serial_state;
+    } else if(3 == serial_state) {
+      serial_crc = ((unsigned long)newchar) << 24;
+      ++serial_state;
+    } else if(4 == serial_state) {
+      serial_crc |= ((unsigned long)newchar) << 16;
+      ++serial_state;
+    } else if(5 == serial_state) {
+      serial_crc |= ((unsigned long)newchar) << 8;
+      ++serial_state;
+    } else if(6 == serial_state) {
+      serial_crc |= ((unsigned long)newchar);
+      ++serial_state;
+    } else if(7 == serial_state) {
+      serial_crc2 = ((unsigned long)(newchar ^ serial_len)) << 24;
+      ++serial_state;
+    } else if(8 == serial_state) {
+      serial_crc2 |= ((unsigned long)(newchar ^ serial_len)) << 16;
+      ++serial_state;
+    } else if(9 == serial_state) {
+      serial_crc2 |= ((unsigned long)(newchar ^ serial_len)) << 8;
+      ++serial_state;
+    } else if(10 == serial_state) {
+      serial_crc2 |= ((unsigned long)(newchar ^ serial_len));
+      if(serial_crc == serial_crc2) {
+        ++serial_state;
+        serial_pos = 0;
+      } else {
+        serial_state = 0;
+      }
+    } else if(11 == serial_state) {
+      serial_message[serial_pos++] = newchar;
+      if(serial_pos == serial_len) {
+        serial_state = 0;
+        unsigned long calccrc = crc_string(serial_message, serial_len);
+        if(calccrc == serial_crc) {
+          for(unsigned char i = 0; i < serial_len; ++i) {
+            EEPROM.write(START_OF_MSG_ADDR + i, serial_message[i]);
+          }
+          EEPROM.write(MSG_LENGTH_ADDR, serial_len);
+          store_crc(START_OF_MSG_CRC, serial_crc);
+          Serial.print("Wrote message:");
+          serial_message[serial_len] = 0;
+          Serial.println(serial_message);
+          reload = true;
+        }
+      }
+    } else if(100 == serial_state) {
+      if(0x99 == newchar) {
+        if(++serial_len == 3) {
+          ++serial_state;
+        }
+      } else {
+        serial_state = 0;
+      }
+    } else if(101 == serial_state) {
+      if(newchar < BADGE_TYPE_COUNT) {
+        serial_message[0] = newchar;
+        serial_len = 1;
+        ++serial_state;
+      } else {
+        serial_state = 0;
+      }
+    } else if(102 == serial_state) {
+      if(serial_message[0] == newchar) {
+        if(++serial_len == 3) {
+          Serial.print("Setting badge type to:");
+          Serial.println(default_msg[newchar]);
+          EEPROM.write(BADGE_TYPE_ADDR, newchar);
+          serial_state = 0;
+          reload = true;
+        }
+      } else {
+        serial_state = 0;
+      }
     }
   }
 }
@@ -291,12 +365,18 @@ void write_shift_reg(unsigned int write_me) {
 }
 
 void demo() {
+  unsigned char demo_speed = 1;
+  
+  if(0 == message_num_cols) {
+    demo_speed = 10;
+  }
+  
   if(current_demo == 0) {
     // all LEDs on
 	for(char i = 0; i < 8; ++i) {
 	  writeCol(i, 0x7F);
 	}
-	if(++scroll_count > (SCROLL_REFRESH * 50)) {
+	if(++scroll_count > (SCROLL_REFRESH * 5 * demo_speed)) {
 	  scroll_count = 0;
 	  ++current_demo;
 	  current_col = 0;
@@ -307,7 +387,7 @@ void demo() {
     for(char i = 0; i < 8; ++i) {
       writeCol(i, mask);
     }
-    if(++scroll_count > (SCROLL_REFRESH * 20)) {
+    if(++scroll_count > (SCROLL_REFRESH * 2 * demo_speed)) {
       scroll_count = 0;
       ++current_col;
     }
@@ -322,7 +402,7 @@ void demo() {
     for(char i = 0; i < 8; ++i) {
       writeCol(i, mask);
     }
-    if(++scroll_count > (SCROLL_REFRESH * 20)) {
+    if(++scroll_count > (SCROLL_REFRESH * 2 * demo_speed)) {
       scroll_count = 0;
       ++current_col;
     }
