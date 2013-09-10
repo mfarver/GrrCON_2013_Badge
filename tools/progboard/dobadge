@@ -8,7 +8,7 @@ fi
 again=1
 while [ $again -eq 1 ]; do
 
-BADGE=`echo $BADGE|grep -E '^[0-4]$'`
+BADGE=`echo $BADGE|grep -E '^[0-4n]$'`
 while [ -z "$BADGE" ]; do
 
 echo Please select a badge type to program:
