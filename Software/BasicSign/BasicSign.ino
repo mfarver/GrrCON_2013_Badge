@@ -110,14 +110,14 @@ unsigned long crc_string(char *s, unsigned int len)
 
 void store_crc(unsigned int addr, unsigned long crc) {
   for(char i = 0; i < 4; ++i) {
-    EEPROM.write(addr + i, ((crc >> (8 * i)) & 0xff));
+    EEPROM.write(addr + i, ((crc >> (8 * (3-i))) & 0xff));
   }
 }
 
 unsigned long load_crc(unsigned int addr) {
   unsigned long crc = 0;
   for(char i = 0; i < 4; ++i) {
-    crc |= ((unsigned long) EEPROM.read(addr + i)) << (8 * i);
+    crc |= ((unsigned long) EEPROM.read(addr + i)) << (8 * (3-i));
   }
   return crc;
 }
