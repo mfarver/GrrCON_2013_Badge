@@ -38,7 +38,8 @@ THE SOFTWARE.
 #define shift_data_mask        1 << shift_data_bit_pos
 
 #define MSG_LENGTH_ADDR 0
-#define START_OF_MSG_ADDR MSG_LENGTH_ADDR + 1
+#define START_OF_MSG_CRC MSG_LENGTH_ADDR + 1
+#define START_OF_MSG_ADDR START_OF_MSG_CRC + 4
 #define MAX_MSG_LENGTH 254
 
 // last byte of eeprom contains the badge type
@@ -107,6 +108,20 @@ unsigned long crc_string(char *s, unsigned int len)
   return crc;
 }
 
+void store_crc(unsigned int addr, unsigned long crc) {
+  for(char i = 0; i < 4; ++i) {
+    EEPROM.write(addr + i, ((crc >> (8 * i)) & 0xff));
+  }
+}
+
+unsigned long load_crc(unsigned int addr) {
+  unsigned long crc = 0;
+  for(char i = 0; i < 4; ++i) {
+    crc |= ((unsigned long) EEPROM.read(addr + i)) << (8 * i);
+  }
+  return crc;
+}
+
 void load_msg() {
   //We need to load the message length
   //The message is stored in a Pascal string in EEPROM
@@ -128,7 +143,17 @@ void load_msg() {
     for(unsigned int i = 0; i < message_num_cols; ++i) {
       message[i] = EEPROM.read(START_OF_MSG_ADDR + i);
     }
-  } else if (badge_type < BADGE_TYPE_COUNT) {
+    unsigned long msg_crc = crc_string(message, message_num_cols);
+    unsigned long stored_crc = load_crc(START_OF_MSG_CRC);
+
+    // if the crc does not match, reject and fall back on defaults
+    if(msg_crc != stored_crc) {
+      message_num_cols = 0;
+    }
+  }
+  
+  // don't combine. if the message failed CRC, we reject it and go to default
+  if((message_num_cols == 0) && (badge_type < BADGE_TYPE_COUNT)) {
     while(default_msg[badge_type][message_num_cols]) {
       message[message_num_cols] = default_msg[badge_type][message_num_cols];
       ++message_num_cols;
