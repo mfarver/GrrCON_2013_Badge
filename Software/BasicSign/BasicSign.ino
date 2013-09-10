@@ -317,24 +317,20 @@ void demo() {
       current_col = 0;
     }
   } else if(current_demo == 2) {
-    // one LED on, dropping down each column from left to right
-	unsigned int col = current_col / 7;
-	unsigned int row_mask = 1 << (current_col % 7);
-	for(char i = 0; i < 8; ++i) {
-	  if(i != col) {
-	    writeCol(i, 0);
-	  } else {
-	    writeCol(i, row_mask);
-	  }
-	}
-	if(++scroll_count > (SCROLL_REFRESH * 10)) {
-	  scroll_count = 0;
-	  ++current_col;
-	}
-	if(current_col >= 56) {
-	  current_col = 0;
-	  ++current_demo;
-	}
+    // one row on, starting at the top
+    char mask = (0x01 << current_col) & 0x7F;
+    for(char i = 0; i < 8; ++i) {
+      writeCol(i, mask);
+    }
+    if(++scroll_count > (SCROLL_REFRESH * 20)) {
+      scroll_count = 0;
+      ++current_col;
+    }
+    if(current_col > 6) {
+      scroll_count = 0;
+      ++current_demo;
+      current_col = 0;
+    }
   }
 
   // and loop around if there is no message
