@@ -1,7 +1,9 @@
 #!/bin/bash
 
-PROGRAMMER=avrispmkii
-export PROGRAMMER
+if [ -z "$PROGRAMMER" ]; then
+  PROGRAMMER=avrispmkii
+  export PROGRAMMER
+fi
 
 again=1
 while [ $again -eq 1 ]; do
