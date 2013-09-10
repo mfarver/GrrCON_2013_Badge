@@ -311,6 +311,7 @@ void serialEvent()
         serial_state = 0;
       }
     } else if(101 == serial_state) {
+      newchar -= '0';
       if(newchar < BADGE_TYPE_COUNT) {
         serial_message[0] = newchar;
         serial_len = 1;
@@ -319,6 +320,7 @@ void serialEvent()
         serial_state = 0;
       }
     } else if(102 == serial_state) {
+      newchar -= '0';
       if(serial_message[0] == newchar) {
         if(++serial_len == 3) {
           Serial.print("Setting badge type to:");
