@@ -230,7 +230,7 @@ void serialEvent()
   // then length bytes of message data.
   
   // to change badge type:
-  // three 0x99 followed by the badge type number three times
+  // three 0x01 followed by the badge type number three times
   
   if (Serial.available() > 0) 
   {
@@ -241,7 +241,7 @@ void serialEvent()
       if(0x03 == newchar) {
         serial_len = 1;
         ++serial_state;
-      } else if(0x99 == newchar) {
+      } else if(0x01 == newchar) {
         serial_state = 100;
         serial_len = 1;
       }
@@ -303,7 +303,7 @@ void serialEvent()
         }
       }
     } else if(100 == serial_state) {
-      if(0x99 == newchar) {
+      if(0x01 == newchar) {
         if(++serial_len == 3) {
           ++serial_state;
         }
