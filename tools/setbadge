@@ -1,0 +1,28 @@
+#!/usr/bin/python
+
+import serial, sys, glob, time
+
+if len(sys.argv) >= 3:
+    ser = serial.Serial(sys.argv[1])
+else:
+    for port in glob.glob('/dev/ttyACM*'):
+        try:
+            ser = serial.Serial(port, 9600)
+        except Exception:
+            pass # Fail
+        else:
+            break
+    else:
+        sys.exit("No ports found")
+
+
+print "board type:"
+print "0 - speaker (red)"
+print "1 - staff (blue)"
+print "2 - grrcon (black)"
+print "3 - vip (yellow)"
+
+txt = raw_input("> ")
+# sleep to make sure the AVR is booted. opening the port reboots.
+time.sleep(2);
+ser.write('aaaaaaaaaa\x01\x01\x01'+txt+txt+txt)
