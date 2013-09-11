@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import serial, sys, glob, binascii
+import serial, sys, glob, binascii, time
 
 if len(sys.argv) >= 2:
     ser = serial.Serial(sys.argv[1])
@@ -20,6 +20,9 @@ else:
 txt = raw_input("> ")
 
 crc32 = binascii.crc32(txt) & 0xffffffff
+
+# wait for the badge to finish resetting
+time.sleep(2);
 
 for x in range(0, 10):
     ser.write(' ');
