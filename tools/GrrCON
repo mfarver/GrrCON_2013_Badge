@@ -2,6 +2,8 @@
 
 import serial, sys, glob, binascii, time, platform, struct
 
+ser = None
+
 # Check to see if we're importing a port directly
 if len(sys.argv) >= 2:
     ser = serial.Serial(sys.argv[1])
@@ -23,8 +25,9 @@ elif (platform.system() == "Darwin") :
             pass # Fail
         else:
             break
-# Call it off
-else:
+
+# if we didn't find a port, abort
+if ser == None:
     sys.exit("No compatible port was found on your computer.")
 
 
@@ -67,7 +70,7 @@ if(choice == "0"):
     txt = raw_input("> ")
 
     if (txt == "9"):
-        sys.exit()
+        sys.exit(9)
     else:
         # sleep to make sure the AVR is booted. opening the port reboots.
         print "Updating your GrrCon badge to", txt, ", please wait a few seconds."
@@ -186,9 +189,7 @@ elif(choice == "2"):
     print "Please check your badge to make sure your badge shows the text you chose."
     print ""
 elif(choice == "9"):
-    sys.exit()
+    sys.exit(9)
 else:
     sys.exit("Incorrect or Blank Entry. Please retry")
-
-
 
