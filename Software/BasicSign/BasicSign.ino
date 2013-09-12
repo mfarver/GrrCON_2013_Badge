@@ -287,7 +287,7 @@ void serialEvent()
       }
     } else if(11 == serial_state) {
       serial_message[serial_pos++] = newchar;
-      if(serial_pos == serial_len) {
+      if((serial_pos == serial_len) || (0 == serial_len)) {
         serial_state = 0;
         unsigned long calccrc = crc_string(serial_message, serial_len);
         if(calccrc == serial_crc) {
