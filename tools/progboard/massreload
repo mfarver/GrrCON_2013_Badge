@@ -1,0 +1,15 @@
+#!/bin/bash --
+
+while true; do
+	echo insert board
+
+	while [ ! -e /dev/ttyACM0 ]; do sleep 1; done
+
+avrdude -p atmega328p -c arduino -P /dev/ttyACM0 -b 19200 -D -U flash:w:BasicSign.cpp.hex
+
+	echo remove board
+
+	while [ -e /dev/ttyACM0 ]; do sleep 1; done
+done
+
+
